@@ -132,6 +132,10 @@ def main():
     st.subheader('Median Home Price in Each City')
     median_home_price_in_each_city(filtered_homes)
 
+    st.subheader('Number of Homes for Sale by City')
+    homes_by_city = filtered_homes['City'].value_counts()
+    st.bar_chart(homes_by_city)
+
     st.subheader("GitHub Repository")
     github_link = "https://github.com/justinpferdner/semester_project"
     st.markdown(github_link, unsafe_allow_html=True)
