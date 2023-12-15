@@ -3,21 +3,26 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
-import plotly.figure_factory as ff
 
 st.title('Dashboard: Analyzing Home Prices in Utah')
+st.subheader('Find your perfect home.')
+st.write('Searching for the perfect home just got easier. View homes for sale in the area of your choice, for the price of your choice, along with bedroom/bathroom selection. After filtering data to your specifications, check out the table below to view the homes tailored to your search!')
+st.write('View the charts below to discover more about homes prices in your area of interest. Discover which areas have bigger homes, cheaper homes, or more homes for sale')
+
 
 homes = pd.read_csv('homes.csv')
 homes['Price_per_sqft'] = homes['Price'] / homes['Sqft']
 homes = homes.drop(columns=['Unnamed: 0.1', 'Unnamed: 0'])
 homes['ZipCode'] = homes['ZipCode'].astype(str)
+homes = homes.rename(columns={'Latitude': 'lat', 'Longitude': 'lon'})
+
 
 
 def distribution_of_home_prices(homes):
     plt.figure(figsize=(10, 6))
     sns.histplot(homes['Price'], bins=30, kde=True)
     plt.title('Distribution of Home Prices')
-    plt.xlabel('Price ($)')
+    plt.xlabel('Price ($) in millions')
     plt.ylabel('Frequency')
     st.pyplot()
 
@@ -48,8 +53,9 @@ def correlation_heatmap(homes):
     st.pyplot()
 
 def average_price_per_square_foot_in_different_cities(homes):
+    avg_price_per_sqft = homes.groupby('City')['Price_per_sqft'].mean().sort_values(ascending=False)
     plt.figure(figsize=(10, 6))
-    sns.barplot(x='City', y='Price_per_sqft', data=homes)
+    sns.barplot(x=avg_price_per_sqft.index, y=avg_price_per_sqft.values, order=avg_price_per_sqft.index)
     plt.title('Average Price per Square Foot in Different Cities')
     plt.xlabel('City')
     plt.ylabel('Average Price per Square Foot ($)')
@@ -65,8 +71,10 @@ def box_plot_of_home_prices_based_on_number_of_bedrooms(homes):
     st.pyplot()
 
 def median_home_price_in_each_city(homes):
+    median_home_prices = homes.groupby('City')['Price'].median().sort_values(ascending=False)
+
     plt.figure(figsize=(10, 6))
-    sns.barplot(x='City', y='Price', data=homes, estimator=np.median)
+    sns.barplot(x=median_home_prices.index, y=median_home_prices.values, order=median_home_prices.index)
     plt.title('Median Home Price in Each City')
     plt.xlabel('City')
     plt.ylabel('Median Home Price ($)')
@@ -110,8 +118,13 @@ def main():
     st.subheader("Filtered Data")
     st.write(filtered_homes)
 
+    #Display Map
+    st.title('Map')
+    st.map(filtered_homes[['lat', 'lon']].dropna(subset=['lat', 'lon']))
+
     # Display plots
     st.subheader('Distribution of Home Prices')
+    st.write('The distribution of home prices is extremely right skewed due to a small number of multi-million dollar homes for sale. Filter the price to below $2 million to see a more normal distribution.')
     distribution_of_home_prices(filtered_homes)
 
     st.subheader('Scatter Plot of Price vs. Square Footage by County')
@@ -124,7 +137,7 @@ def main():
     correlation_heatmap(filtered_homes)
 
     st.subheader('Average Price per Square Foot')
-    average_price_per_square_foot_in_different_cities(filtered_homes)
+    average_price_per_square_foot_in_different_cities(filtered_homes.drop(filtered_homes['Price_per_sqft'].nlargest(2).index))
 
     st.subheader('Box Plot of Home Prices Based on Number of Bedrooms')
     box_plot_of_home_prices_based_on_number_of_bedrooms(filtered_homes)
